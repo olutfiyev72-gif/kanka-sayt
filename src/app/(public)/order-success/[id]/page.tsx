@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/server'
 import { CheckCircle, MapPin, Send, ArrowLeft } from 'lucide-react'
-import type { Order } from '@/types'
+import type { Order, OrderItem } from '@/types'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -55,7 +55,7 @@ export default async function OrderSuccessPage({ params, searchParams }: Props) 
         <div className="card p-6 mb-6">
           <h2 className="font-semibold text-charcoal mb-4 text-sm">Buyurtma tarkibi</h2>
           <div className="space-y-3">
-            {order.order_items.map((item: any) => (
+            {order.order_items.map((item: OrderItem) => (
               <div key={item.id} className="flex justify-between text-sm">
                 <span className="font-mono font-bold text-charcoal">
                   SKU: {item.sku_snapshot || item.product_name_snapshot}

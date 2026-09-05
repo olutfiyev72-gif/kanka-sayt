@@ -33,7 +33,7 @@ export function trackPageView(url: string) {
   gtag('config', process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID, { page_path: url })
 }
 
-export function trackViewProduct(product: { id: string; sku?: string; name?: string; slug?: string }) {
+export function trackViewProduct(product: { id: string; sku?: string | null; name?: string | null; slug?: string | null }) {
   const label = product.sku || product.name || 'Product'
   gtag('event', 'view_item', {
     items: [{ item_id: product.id, item_name: label }],
@@ -41,7 +41,7 @@ export function trackViewProduct(product: { id: string; sku?: string; name?: str
   fbq('event', 'ViewContent', { content_ids: [product.id], content_name: label })
 }
 
-export function trackAddToOrder(product: { id: string; sku?: string; name?: string }, quantity: number) {
+export function trackAddToOrder(product: { id: string; sku?: string | null; name?: string | null }, quantity: number) {
   const label = product.sku || product.name || 'Product'
   gtag('event', 'add_to_cart', {
     items: [{ item_id: product.id, item_name: label, quantity }],

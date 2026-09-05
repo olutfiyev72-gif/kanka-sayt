@@ -41,6 +41,7 @@ export function ProductDetailActions({ product }: ProductDetailActionsProps) {
     })
 
     toast.success(`${sku} buyurtmaga qo‘shildi`)
+    trackAddToOrder(product, quantity)
     setAdded(true)
     setTimeout(() => setAdded(false), 2500)
   }

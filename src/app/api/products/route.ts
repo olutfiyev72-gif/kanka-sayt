@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { verifySessionToken, ADMIN_COOKIE_NAME, getMarkupPercent } from '@/lib/adminAuth'
 import { calculateSellingPrice } from '@/lib/pricing'
 import { logAuditEvent } from '@/lib/auditLog'
-import { generateSKU, generateSlug } from '@/lib/validations'
+import { generateSlug } from '@/lib/validations'
 import type { Product, PublicProduct } from '@/types'
 
 // GET /api/products — Public product listing (active only, CLIENT SAFE)

@@ -2,11 +2,11 @@
   "users": [
     {
       "login": "my_super_admin",
-      "passwordHash": "8b27b095db39c649ab150910e990b4eebd6b4fde66c62accaa88410b2b7ae25a",
-      "salt": "689349211dce8cd4aadd0cfb82db8cac",
+      "passwordHash": "b141142fa53067e16f5dd673e138ff8e4eac7faa9bb36308672ed6a431a5a33e",
+      "salt": "bfdf8746643da6990f50f0b72fa4d069",
       "role": "OWNER",
       "name": "Do'kon Egasi (Owner)",
-      "updatedAt": "2026-09-05T11:38:00.220Z"
+      "updatedAt": "2026-09-05T14:21:18.867Z"
     },
     {
       "login": "12345678",
@@ -18,5 +18,5 @@
     }
   ],
   "markupPercent": 15,
-  "updatedAt": "2026-09-05T11:38:00.220Z"
+  "updatedAt": "2026-09-05T14:21:18.867Z"
 }
