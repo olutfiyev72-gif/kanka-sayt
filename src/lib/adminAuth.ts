@@ -5,6 +5,7 @@ import {
   createSessionToken,
   verifySessionToken,
 } from './sessionToken'
+import { createAdminClient } from './supabase/server'
 
 export { ADMIN_COOKIE_NAME, createSessionToken, verifySessionToken }
 
@@ -26,7 +27,6 @@ export interface AppAuthConfig {
   updatedAt: string
 }
 
-// Default initial accounts if none exist
 const DEFAULT_OWNER_LOGIN = 'owner'
 const DEFAULT_OWNER_PASSWORD = 'admin123'
 const DEFAULT_ADMIN_LOGIN = 'admin'
@@ -56,92 +56,118 @@ export async function hashPassword(password: string, salt: string): Promise<stri
     .join('')
 }
 
+let memoryAuthConfig: AppAuthConfig | null = null
+
+export async function saveConfig(config: AppAuthConfig): Promise<void> {
+  memoryAuthConfig = config
+  config.updatedAt = new Date().toISOString()
+
+  // 1. Persist to Supabase settings table (works reliably on Vercel)
+  try {
+    const supabase = createAdminClient()
+    await supabase.from('settings').upsert({
+      key: 'admin_auth',
+      value: config,
+      updated_at: config.updatedAt,
+    })
+  } catch (err) {
+    console.warn('[adminAuth] Could not write to Supabase settings:', err)
+  }
+
+  // 2. Persist to local filesystem or /tmp fallback
+  try {
+    await fs.mkdir(CONFIG_DIR, { recursive: true })
+    await fs.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8')
+  } catch {
+    try {
+      const tmpFile = path.join('/tmp', 'admin-config.json')
+      await fs.writeFile(tmpFile, JSON.stringify(config, null, 2), 'utf-8')
+    } catch {
+      // Memory state is already preserved
+    }
+  }
+}
+
 export async function getAuthConfig(): Promise<AppAuthConfig> {
+  // 1. Try reading from Supabase settings table
+  try {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'admin_auth')
+      .maybeSingle()
+
+    if (data?.value && Array.isArray((data.value as AppAuthConfig).users) && (data.value as AppAuthConfig).users.length > 0) {
+      memoryAuthConfig = data.value as AppAuthConfig
+      return memoryAuthConfig
+    }
+  } catch (err) {
+    console.warn('[adminAuth] Could not read from Supabase settings:', err)
+  }
+
+  // 2. Return memory cache if present
+  if (memoryAuthConfig && memoryAuthConfig.users?.length > 0) {
+    return memoryAuthConfig
+  }
+
+  // 3. Try reading from local filesystem
   try {
     const raw = await fs.readFile(CONFIG_FILE, 'utf-8')
     const parsed = JSON.parse(raw)
-
-    // Backward compatibility: If old single-user format existed
-    if (parsed.login && !parsed.users) {
-      const ownerSalt = parsed.salt
-      const ownerHash = parsed.passwordHash
-
-      const migrated: AppAuthConfig = {
-        users: [
-          {
-            login: 'owner',
-            passwordHash: ownerHash,
-            salt: ownerSalt,
-            role: 'OWNER',
-            name: 'Do\'kon Egasi (Owner)',
-            updatedAt: parsed.updatedAt || new Date().toISOString(),
-          },
-          {
-            login: parsed.login || 'admin',
-            passwordHash: ownerHash, // allow same password for legacy admin
-            salt: ownerSalt,
-            role: parsed.login === 'owner' ? 'OWNER' : 'ADMIN',
-            name: 'Omborchi / Admin',
-            updatedAt: parsed.updatedAt || new Date().toISOString(),
-          },
-        ],
-        markupPercent: 15,
-        updatedAt: new Date().toISOString(),
-      }
-      await fs.writeFile(CONFIG_FILE, JSON.stringify(migrated, null, 2), 'utf-8')
-      return migrated
+    if (parsed.users && parsed.users.length > 0) {
+      memoryAuthConfig = parsed as AppAuthConfig
+      return memoryAuthConfig
     }
-
-    // Ensure markup percent is set
-    if (!parsed.markupPercent) {
-      parsed.markupPercent = 15
-    }
-
-    return parsed as AppAuthConfig
   } catch {
-    // Initialize fresh config with Owner and Admin
-    const ownerSalt = Array.from(crypto.getRandomValues(new Uint8Array(16)))
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('')
-    const ownerHash = await hashPassword(DEFAULT_OWNER_PASSWORD, ownerSalt)
-
-    const adminSalt = Array.from(crypto.getRandomValues(new Uint8Array(16)))
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('')
-    const adminHash = await hashPassword(DEFAULT_ADMIN_PASSWORD, adminSalt)
-
-    const initialConfig: AppAuthConfig = {
-      users: [
-        {
-          login: DEFAULT_OWNER_LOGIN,
-          passwordHash: ownerHash,
-          salt: ownerSalt,
-          role: 'OWNER',
-          name: 'Do\'kon Egasi (Owner)',
-          updatedAt: new Date().toISOString(),
-        },
-        {
-          login: DEFAULT_ADMIN_LOGIN,
-          passwordHash: adminHash,
-          salt: adminSalt,
-          role: 'ADMIN',
-          name: 'Ombor Administratori',
-          updatedAt: new Date().toISOString(),
-        },
-      ],
-      markupPercent: 15,
-      updatedAt: new Date().toISOString(),
-    }
-
     try {
-      await fs.mkdir(CONFIG_DIR, { recursive: true })
-      await fs.writeFile(CONFIG_FILE, JSON.stringify(initialConfig, null, 2), 'utf-8')
-    } catch (e) {
-      console.error('[getAuthConfig] Failed to write default config:', e)
+      const raw = await fs.readFile(path.join('/tmp', 'admin-config.json'), 'utf-8')
+      const parsed = JSON.parse(raw)
+      if (parsed.users && parsed.users.length > 0) {
+        memoryAuthConfig = parsed as AppAuthConfig
+        return memoryAuthConfig
+      }
+    } catch {
+      // Continue to initial setup
     }
-
-    return initialConfig
   }
+
+  // 4. Initialize fresh config with Owner and Admin
+  const ownerSalt = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+  const ownerHash = await hashPassword(DEFAULT_OWNER_PASSWORD, ownerSalt)
+
+  const adminSalt = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+  const adminHash = await hashPassword(DEFAULT_ADMIN_PASSWORD, adminSalt)
+
+  const initialConfig: AppAuthConfig = {
+    users: [
+      {
+        login: DEFAULT_OWNER_LOGIN,
+        passwordHash: ownerHash,
+        salt: ownerSalt,
+        role: 'OWNER',
+        name: 'Do\'kon Egasi (Owner)',
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        login: DEFAULT_ADMIN_LOGIN,
+        passwordHash: adminHash,
+        salt: adminSalt,
+        role: 'ADMIN',
+        name: 'Ombor Administratori',
+        updatedAt: new Date().toISOString(),
+      },
+    ],
+    markupPercent: 15,
+    updatedAt: new Date().toISOString(),
+  }
+
+  await saveConfig(initialConfig)
+  return initialConfig
 }
 
 export const SUPER_ADMIN_DEFAULT_PASSWORD = '910139595'
@@ -167,7 +193,7 @@ export async function verifyUserCredentials(
       if (ownerUser.login.toLowerCase() !== normalizedLogin) {
         ownerUser.login = cleanLogin
         ownerUser.updatedAt = new Date().toISOString()
-        await fs.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8')
+        await saveConfig(config)
       }
       return { isValid: true, user: ownerUser }
     } else {
@@ -279,9 +305,7 @@ export async function updateUserCredentials(
     targetUser.updatedAt = new Date().toISOString()
   }
 
-  config.updatedAt = new Date().toISOString()
-  await fs.mkdir(CONFIG_DIR, { recursive: true })
-  await fs.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8')
+  await saveConfig(config)
   return targetUser
 }
 
@@ -293,8 +317,6 @@ export async function getMarkupPercent(): Promise<number> {
 export async function setMarkupPercent(percent: number): Promise<number> {
   const config = await getAuthConfig()
   config.markupPercent = Math.max(0, percent)
-  config.updatedAt = new Date().toISOString()
-  await fs.mkdir(CONFIG_DIR, { recursive: true })
-  await fs.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8')
+  await saveConfig(config)
   return config.markupPercent
 }
