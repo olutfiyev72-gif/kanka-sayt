@@ -2,6 +2,11 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
+// Polyfill WebSocket in Node.js environments where missing (Node < 22)
+if (typeof globalThis.WebSocket === 'undefined') {
+  globalThis.WebSocket = class {} as unknown as typeof WebSocket
+}
+
 // Server client (respects RLS, uses cookies for auth session)
 export async function createClient() {
   const cookieStore = await cookies()

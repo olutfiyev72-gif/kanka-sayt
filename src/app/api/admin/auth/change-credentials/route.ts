@@ -92,7 +92,10 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error('[POST /api/admin/auth/change-credentials]', err)
     return NextResponse.json(
-      { error: 'Sozlamalarni yangilashda xatolik yuz berdi' },
+      { 
+        error: 'Sozlamalarni yangilashda xatolik yuz berdi',
+        details: err instanceof Error ? err.message : String(err),
+      },
       { status: 500 }
     )
   }
