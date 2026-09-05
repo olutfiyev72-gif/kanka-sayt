@@ -1,0 +1,209 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   KANKA — Global Design System
+   ============================================================ */
+
+@layer base {
+  :root {
+    --font-sans: 'Inter', system-ui, sans-serif;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-ivory text-charcoal font-sans;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  ::selection {
+    @apply bg-olive-100 text-olive-700;
+  }
+
+  /* Focus states — accessible */
+  :focus-visible {
+    @apply outline-none ring-2 ring-olive ring-offset-2;
+  }
+
+  /* Remove default focus for mouse users */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+@layer components {
+  /* ========== BUTTONS ========== */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 
+           font-medium rounded-lg transition-all duration-150
+           disabled:opacity-50 disabled:cursor-not-allowed
+           select-none;
+  }
+
+  .btn-primary {
+    @apply btn bg-charcoal text-white
+           hover:bg-charcoal-600 active:scale-[0.98]
+           px-5 py-3 text-sm;
+  }
+
+  .btn-primary-lg {
+    @apply btn bg-charcoal text-white
+           hover:bg-charcoal-600 active:scale-[0.98]
+           px-6 py-4 text-base font-semibold w-full;
+  }
+
+  .btn-secondary {
+    @apply btn bg-white text-charcoal border border-border
+           hover:bg-ivory-200 active:scale-[0.98]
+           px-5 py-3 text-sm;
+  }
+
+  .btn-ghost {
+    @apply btn text-muted hover:text-charcoal hover:bg-ivory-200
+           px-3 py-2 text-sm;
+  }
+
+  .btn-danger {
+    @apply btn bg-red-50 text-red-600 border border-red-200
+           hover:bg-red-100 active:scale-[0.98]
+           px-5 py-3 text-sm;
+  }
+
+  .btn-olive {
+    @apply btn bg-olive text-white
+           hover:bg-olive-600 active:scale-[0.98]
+           px-5 py-3 text-sm;
+  }
+
+  /* ========== CARDS ========== */
+  .card {
+    @apply bg-white rounded-xl border border-border shadow-card;
+  }
+
+  .card-hover {
+    @apply card transition-shadow duration-200 hover:shadow-card-hover;
+  }
+
+  /* ========== INPUTS ========== */
+  .input {
+    @apply w-full px-4 py-3 bg-white border border-border rounded-lg
+           text-charcoal placeholder-muted-light text-sm
+           transition-colors duration-150
+           focus:outline-none focus:ring-2 focus:ring-olive focus:border-transparent
+           disabled:bg-ivory-200 disabled:cursor-not-allowed;
+  }
+
+  .input-error {
+    @apply border-red-400 focus:ring-red-400;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-charcoal mb-1.5;
+  }
+
+  .error-msg {
+    @apply text-xs text-red-600 mt-1;
+  }
+
+  /* ========== SECTION TITLES ========== */
+  .section-title {
+    @apply text-2xl font-semibold text-charcoal tracking-tight;
+  }
+
+  .section-subtitle {
+    @apply text-base text-muted mt-1;
+  }
+
+  /* ========== DIVIDERS ========== */
+  .divider {
+    @apply border-t border-border;
+  }
+
+  /* ========== ADMIN ========== */
+  .admin-page {
+    @apply min-h-screen bg-ivory;
+  }
+
+  .admin-card {
+    @apply card p-6;
+  }
+
+  /* ========== SKELETON ========== */
+  .skeleton {
+    @apply bg-gradient-to-r from-ivory-200 via-white to-ivory-200
+           animate-pulse rounded-lg;
+    background-size: 200% 100%;
+  }
+
+  /* ========== BADGE ========== */
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+
+  .badge-available {
+    @apply badge bg-stock-available-bg text-stock-available;
+  }
+
+  .badge-low {
+    @apply badge bg-stock-low-bg text-stock-low;
+  }
+
+  .badge-out {
+    @apply badge bg-stock-out-bg text-stock-out;
+  }
+
+  /* Order status badges */
+  .badge-new       { @apply badge bg-status-new-bg text-status-new; }
+  .badge-confirmed { @apply badge bg-status-confirmed-bg text-status-confirmed; }
+  .badge-ready     { @apply badge bg-status-ready-bg text-status-ready; }
+  .badge-completed { @apply badge bg-status-completed-bg text-status-completed; }
+  .badge-cancelled { @apply badge bg-status-cancelled-bg text-status-cancelled; }
+}
+
+@layer utilities {
+  /* Touch-friendly targets */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Hide scrollbar but allow scroll */
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe area for mobile sticky elements */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+
+  /* Text clamp */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
