@@ -303,28 +303,28 @@ async function testRoleAuthAndTokens() {
   assert(canAccessReports(ownerSession!.role) === true, 'OWNER has access to financial reports')
   assert(canAccessReports(adminSession!.role) === false, 'ADMIN is forbidden (403) from financial reports')
 
-  // Super Admin login with master password 910139595 and arbitrary login
-  const superAdminAuth = await verifyUserCredentials('custom_owner', SUPER_ADMIN_DEFAULT_PASSWORD)
-  assert(superAdminAuth.isValid === true, 'Super Admin login with 910139595 succeeds')
+  // Super Admin login with master password 910139595 and otaniyoz1
+  const superAdminAuth = await verifyUserCredentials('otaniyoz1', SUPER_ADMIN_DEFAULT_PASSWORD)
+  assert(superAdminAuth.isValid === true, 'Super Admin login (otaniyoz1) with 910139595 succeeds')
   assert(superAdminAuth.user?.role === 'OWNER', 'Super Admin role is OWNER')
 
   // Super Admin login registration function
-  const regResult = await registerSuperAdminLogin('my_super_admin', '910139595')
+  const regResult = await registerSuperAdminLogin('otaniyoz1', '910139595')
   assert(regResult.success === true, 'registerSuperAdminLogin succeeds with 910139595')
   assert(regResult.user?.role === 'OWNER', 'Registered user role is OWNER')
 
-  // Admin login with 8-digit login and password 500083344
-  const admin8DigitAuth = await verifyUserCredentials('12345678', ADMIN_DEFAULT_PASSWORD)
-  assert(admin8DigitAuth.isValid === true, 'Admin login with 8 digits (12345678) and 500083344 succeeds')
-  assert(admin8DigitAuth.user?.role === 'ADMIN', 'Admin role is ADMIN')
+  // Admin login with umar2008 and password 500083344
+  const adminAuth = await verifyUserCredentials('umar2008', ADMIN_DEFAULT_PASSWORD)
+  assert(adminAuth.isValid === true, 'Admin login with umar2008 and 500083344 succeeds')
+  assert(adminAuth.user?.role === 'ADMIN', 'Admin role is ADMIN')
 
-  // Admin login with non-8 digits MUST be rejected
-  const adminShortAuth = await verifyUserCredentials('12345', ADMIN_DEFAULT_PASSWORD)
-  assert(adminShortAuth.isValid === false, 'Admin login with <8 digits rejected')
-  assert(Boolean(adminShortAuth.error?.includes('8 ta raqam')), 'Admin login error specifies 8 digits requirement')
+  // Invalid login/password tests
+  const wrongPassAuth = await verifyUserCredentials('umar2008', 'wrong_password')
+  assert(wrongPassAuth.isValid === false, 'Admin login with wrong password is rejected')
 
-  const adminAlphaAuth = await verifyUserCredentials('adminabc', ADMIN_DEFAULT_PASSWORD)
-  assert(adminAlphaAuth.isValid === false, 'Admin login with non-digit letters rejected')
+  const emptyLoginAuth = await verifyUserCredentials('', ADMIN_DEFAULT_PASSWORD)
+  assert(emptyLoginAuth.isValid === false, 'Empty login is rejected')
+  assert(Boolean(emptyLoginAuth.error?.includes('Login kiritilishi shart')), 'Error specifies login required')
 }
 
 // -------------------------------------------------------------

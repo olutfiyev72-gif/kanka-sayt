@@ -1,22 +1,22 @@
 {
   "users": [
     {
-      "login": "my_super_admin",
-      "passwordHash": "c940a07ef1f2ebced98d44be6a11fcf775bfa2045627a7e1aa93427e6f550d44",
-      "salt": "0b09ff6e9b8b5b0c1972dd864f34ea7b",
+      "login": "otaniyoz1",
+      "passwordHash": "21ecd11d4eea823e199c7bd7bf2247883024dd28c5ed36b619b99b94f9c2b388",
+      "salt": "77ddf59cd42923f41f0aa5409bce5722",
       "role": "OWNER",
-      "name": "Do'kon Egasi (Owner)",
-      "updatedAt": "2026-09-05T15:40:55.927Z"
+      "name": "Super Admin (Do'kon Egasi)",
+      "updatedAt": "2026-09-05T15:51:49.682Z"
     },
     {
-      "login": "12345678",
-      "passwordHash": "86f0d8399ac91f8cf4ebb9b6bf1ce5897d77b6ea5f98d07fda67d3aaad14fd35",
-      "salt": "67f3123ed89c7d038e6eedacde8c4b90",
+      "login": "umar2008",
+      "passwordHash": "3263676ba26eeb323a80b0408f7b43edd4c6f2a82e3d25f8d3acf0433d52de41",
+      "salt": "fe1fbf2064f19a04e4a64fd613d381be",
       "role": "ADMIN",
-      "name": "Ombor Administratori",
-      "updatedAt": "2026-09-05T10:44:36.412Z"
+      "name": "Administrator (Omborchi)",
+      "updatedAt": "2026-09-05T15:51:49.685Z"
     }
   ],
   "markupPercent": 15,
-  "updatedAt": "2026-09-05T15:40:55.927Z"
+  "updatedAt": "2026-09-05T15:51:49.685Z"
 }

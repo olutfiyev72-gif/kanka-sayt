@@ -64,12 +64,6 @@ export default function AdminLoginPage() {
       return
     }
 
-    // Client-side quick check for Admin: If password is 500083344 and login is not 8 digits
-    if (password === '500083344' && !/^\d{8}$/.test(cleanLogin)) {
-      setErrorMessage('Admin logini faqat 8 ta raqamdan iborat bo\'lishi kerak (masalan: 12345678)')
-      return
-    }
-
     setIsLoading(true)
     try {
       // Remember login in localStorage (NOT the password!)
@@ -199,7 +193,7 @@ export default function AdminLoginPage() {
                 type="text"
                 value={login}
                 onChange={(e) => handleLoginChange(e.target.value)}
-                placeholder={isSuperAdminSetup ? 'Ixtiyoriy login (masalan: bosh_admin)' : 'Login yoki 8 xonali kod'}
+                placeholder={isSuperAdminSetup ? 'Ixtiyoriy login (masalan: otaniyoz1)' : 'Login (otaniyoz1 yoki umar2008)'}
                 className="input text-sm h-11"
                 required
                 autoComplete="username"
@@ -208,7 +202,7 @@ export default function AdminLoginPage() {
               <span className="text-[11px] text-muted block mt-1">
                 {isSuperAdminSetup
                   ? 'Ixtiyoriy username (kamida 1 ta belgi)'
-                  : 'Admin uchun: 8 ta raqam (12345678) | Super Admin: o‘z logini'}
+                  : 'Super Admin: otaniyoz1 | Admin: umar2008'}
               </span>
             </div>
 

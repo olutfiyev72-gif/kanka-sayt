@@ -27,10 +27,10 @@ export interface AppAuthConfig {
   updatedAt: string
 }
 
-const DEFAULT_OWNER_LOGIN = 'owner'
-const DEFAULT_OWNER_PASSWORD = 'admin123'
-const DEFAULT_ADMIN_LOGIN = 'admin'
-const DEFAULT_ADMIN_PASSWORD = 'admin123'
+const DEFAULT_OWNER_LOGIN = 'otaniyoz1'
+const DEFAULT_OWNER_PASSWORD = '910139595'
+const DEFAULT_ADMIN_LOGIN = 'umar2008'
+const DEFAULT_ADMIN_PASSWORD = '500083344'
 
 export async function hashPassword(password: string, salt: string): Promise<string> {
   const enc = new TextEncoder()
@@ -57,9 +57,12 @@ export async function hashPassword(password: string, salt: string): Promise<stri
 }
 
 let memoryAuthConfig: AppAuthConfig | null = null
+let memoryCachedAt = 0
+const CACHE_TTL_MS = 60 * 1000 // 60s memory cache for extreme speed
 
 export async function saveConfig(config: AppAuthConfig): Promise<void> {
   memoryAuthConfig = config
+  memoryCachedAt = Date.now()
   config.updatedAt = new Date().toISOString()
 
   // 1. Persist to Supabase settings table (works reliably on Vercel)
@@ -89,7 +92,17 @@ export async function saveConfig(config: AppAuthConfig): Promise<void> {
 }
 
 export async function getAuthConfig(): Promise<AppAuthConfig> {
-  // 1. Try reading from Supabase settings table
+  // 1. Return fast memory cache if fresh (avoids DB round-trip latency)
+  if (
+    memoryAuthConfig &&
+    Array.isArray(memoryAuthConfig.users) &&
+    memoryAuthConfig.users.length > 0 &&
+    Date.now() - memoryCachedAt < CACHE_TTL_MS
+  ) {
+    return memoryAuthConfig
+  }
+
+  // 2. Try reading from Supabase settings table
   try {
     const supabase = createAdminClient()
     const { data } = await supabase
@@ -100,23 +113,25 @@ export async function getAuthConfig(): Promise<AppAuthConfig> {
 
     if (data?.value && Array.isArray((data.value as AppAuthConfig).users) && (data.value as AppAuthConfig).users.length > 0) {
       memoryAuthConfig = data.value as AppAuthConfig
+      memoryCachedAt = Date.now()
       return memoryAuthConfig
     }
   } catch (err) {
     console.warn('[adminAuth] Could not read from Supabase settings:', err)
   }
 
-  // 2. Return memory cache if present
+  // 3. Return existing memory cache if present
   if (memoryAuthConfig && memoryAuthConfig.users?.length > 0) {
     return memoryAuthConfig
   }
 
-  // 3. Try reading from local filesystem
+  // 4. Try reading from local filesystem
   try {
     const raw = await fs.readFile(CONFIG_FILE, 'utf-8')
     const parsed = JSON.parse(raw)
     if (parsed.users && parsed.users.length > 0) {
       memoryAuthConfig = parsed as AppAuthConfig
+      memoryCachedAt = Date.now()
       return memoryAuthConfig
     }
   } catch {
@@ -125,6 +140,7 @@ export async function getAuthConfig(): Promise<AppAuthConfig> {
       const parsed = JSON.parse(raw)
       if (parsed.users && parsed.users.length > 0) {
         memoryAuthConfig = parsed as AppAuthConfig
+        memoryCachedAt = Date.now()
         return memoryAuthConfig
       }
     } catch {
@@ -132,7 +148,7 @@ export async function getAuthConfig(): Promise<AppAuthConfig> {
     }
   }
 
-  // 4. Initialize fresh config with Owner and Admin
+  // 5. Initialize fresh config with Super Admin (otaniyoz1) and Admin (umar2008)
   const ownerSalt = Array.from(crypto.getRandomValues(new Uint8Array(16)))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('')
@@ -150,7 +166,7 @@ export async function getAuthConfig(): Promise<AppAuthConfig> {
         passwordHash: ownerHash,
         salt: ownerSalt,
         role: 'OWNER',
-        name: 'Do\'kon Egasi (Owner)',
+        name: 'Super Admin (Do\'kon Egasi)',
         updatedAt: new Date().toISOString(),
       },
       {
@@ -158,7 +174,7 @@ export async function getAuthConfig(): Promise<AppAuthConfig> {
         passwordHash: adminHash,
         salt: adminSalt,
         role: 'ADMIN',
-        name: 'Ombor Administratori',
+        name: 'Administrator (Omborchi)',
         updatedAt: new Date().toISOString(),
       },
     ],
@@ -204,30 +220,29 @@ export async function verifyUserCredentials(
 
   // 2. Direct Admin Password match (500083344)
   if (password === ADMIN_DEFAULT_PASSWORD) {
-    const is8Digits = /^\d{8}$/.test(cleanLogin)
-    if (!is8Digits) {
-      return {
-        isValid: false,
-        error: 'Admin logini faqat 8 ta raqamdan iborat bo\'lishi kerak (masalan: 12345678)',
-      }
-    }
-
     const config = await getAuthConfig()
-    let adminUser = config.users.find((u) => u.role === 'ADMIN' && u.login === cleanLogin)
-    if (!adminUser) {
+    let adminUser = config.users.find((u) => u.role === 'ADMIN')
+    if (adminUser) {
+      if (adminUser.login.toLowerCase() !== normalizedLogin) {
+        adminUser.login = cleanLogin
+        adminUser.updatedAt = new Date().toISOString()
+        await saveConfig(config)
+      }
+      return { isValid: true, user: adminUser }
+    } else {
       adminUser = await updateUserCredentials('ADMIN', cleanLogin, ADMIN_DEFAULT_PASSWORD)
+      return { isValid: true, user: adminUser }
     }
-    return { isValid: true, user: adminUser }
   }
 
-  // 3. Stored hash verification (supports configured passwords & backward compatibility)
+  // 3. Stored hash verification (supports configured passwords & aliases)
   const config = await getAuthConfig()
   for (const user of config.users) {
     const userLogin = user.login.trim().toLowerCase()
     const matches =
       userLogin === normalizedLogin ||
-      (user.role === 'OWNER' && (normalizedLogin === 'owner' || normalizedLogin === 'otaniyoz' || normalizedLogin === 'otaniyoz_lutfiyev')) ||
-      (user.role === 'ADMIN' && (normalizedLogin === 'admin' || normalizedLogin === 'admin@kanka.uz'))
+      (user.role === 'OWNER' && (normalizedLogin === 'owner' || normalizedLogin === 'otaniyoz' || normalizedLogin === 'otaniyoz1')) ||
+      (user.role === 'ADMIN' && (normalizedLogin === 'admin' || normalizedLogin === 'umar2008'))
 
     if (matches) {
       // Check stored password hash
@@ -235,8 +250,11 @@ export async function verifyUserCredentials(
       if (computedHash === user.passwordHash) {
         return { isValid: true, user }
       }
-      // Also allow default legacy admin123
-      if (password === 'admin123') {
+      // Also allow default legacy passwords
+      if (user.role === 'OWNER' && password === SUPER_ADMIN_DEFAULT_PASSWORD) {
+        return { isValid: true, user }
+      }
+      if (user.role === 'ADMIN' && password === ADMIN_DEFAULT_PASSWORD) {
         return { isValid: true, user }
       }
     }
